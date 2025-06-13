@@ -1,0 +1,15 @@
+artifact_uri: file:///D:/VS%20Code/MSML/Workflow-CI/mlruns/0/d43cb750b2cb47778365620c190ffc52/artifacts
+end_time: 1749779846073
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: d43cb750b2cb47778365620c190ffc52
+run_name: delicate-flea-965
+run_uuid: d43cb750b2cb47778365620c190ffc52
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1749779828030
+status: 3
+tags: []
+user_id: TUF Gaming

@@ -1,0 +1,15 @@
+artifact_uri: file:///D:/VS%20Code/MSML/Workflow-CI/mlruns/0/5108962b346f40028e175952f057befe/artifacts
+end_time: 1749780535445
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 5108962b346f40028e175952f057befe
+run_name: abundant-cow-605
+run_uuid: 5108962b346f40028e175952f057befe
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1749780516452
+status: 3
+tags: []
+user_id: TUF Gaming
