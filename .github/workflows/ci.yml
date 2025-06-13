@@ -80,10 +80,13 @@ jobs:
 
       - name: 💾 Commit and Push MLflow artifacts to GitHub
         shell: bash -l {0}
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git pull origin main
+          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}
           git add MLProjects/mlruns/
           git commit -m "🔄 Add MLflow artifacts for run ${{ steps.get_run_id.outputs.run_id }}" || echo "No changes to commit"
           git push origin main
