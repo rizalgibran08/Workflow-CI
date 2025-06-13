@@ -1,37 +1,89 @@
-name: MLflow CI Training
+name: CI/CD MLflow - Telco Churn
 
 on:
   push:
-    paths:
-      - 'MLProjects/**'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
+env:
+  DATA_PATH: 'MLProjects/Telco_preprocessed.csv'
+
 jobs:
-  train-model:
+  train-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: 🛒 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Miniconda
+      - name: 🐍 Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          auto-update-conda: true
-          python-version: 3.10
+          auto-activate-base: false
           environment-file: MLProjects/conda.yaml
           activate-environment: msml-env
+          python-version: '3.10'
 
-      - name: Install MLflow
+      - name: 📦 Install pip dependencies
+        shell: bash -l {0}
         run: |
           pip install mlflow==2.19.0
 
-      - name: Run MLflow Project
+      - name: 🏃 Run MLflow Project
+        shell: bash -l {0}
         run: |
-          mlflow run MLProjects -P data_path=MLProjects/Telco_preprocessed.csv
+          mlflow run ./MLProjects --env-manager=conda -P data_path=${{ env.DATA_PATH }}
 
-      - name: Upload Artifacts (model)
-        uses: actions/upload-artifact@v2
+      - name: 🗂️ List contents of mlruns
+        shell: bash -l {0}
+        run: |
+          echo "🗂 Contents of mlruns:"
+          find mlruns/0
+
+      - name: 🔍 Get latest run_id
+        id: get_run_id
+        shell: bash -l {0}
+        run: |
+          RUN_ID=$(find mlruns/0 -type d -path "*/artifacts/model" | sort | tail -n1 | cut -d'/' -f3)
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: 🔐 Log in to Docker Hub
+        uses: docker/login-action@v2
         with:
-          name: churn-model-artifact
-          path: mlruns/
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: 🛠️ Build Docker Image from MLflow Model
+        shell: bash -l {0}
+        run: |
+          mlflow models build-docker \
+            --model-uri "mlruns/0/${{ steps.get_run_id.outputs.run_id }}/artifacts/model" \
+            --name telco-churn-model
+
+      - name: 🏷️ Tag Docker Image
+        run: |
+          docker tag telco-churn-model ${{ secrets.DOCKER_HUB_USERNAME }}/telco-churn-model:latest
+
+      - name: ⏫ Push Docker Image to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/telco-churn-model:latest
+
+      - name: 🧹 Move MLflow artifacts to MLProjects folder
+        shell: bash -l {0}
+        run: |
+          mkdir -p MLProjects/mlruns
+          cp -r mlruns/0 "MLProjects/mlruns/"
+
+      - name: 💾 Commit and Push MLflow artifacts to GitHub
+        shell: bash -l {0}
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git pull origin main
+          git add MLProjects/mlruns/
+          git commit -m "🔄 Add MLflow artifacts for run ${{ steps.get_run_id.outputs.run_id }}" || echo "No changes to commit"
+          git push origin main
