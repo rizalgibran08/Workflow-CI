@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  DATA_PATH: 'MLProjects/Telco_preprocessed.csv'
+  DATA_PATH: './Telco_preprocessed.csv'
 
 jobs:
   train-and-deploy:
