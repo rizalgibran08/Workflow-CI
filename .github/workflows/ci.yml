@@ -42,8 +42,9 @@ jobs:
       - name: 🏃 Run MLflow Project
         shell: bash -l {0}
         run: |
-          mlflow run ./MLProjects --env-manager=conda
-
+          mlflow run ./MLProjects --env-manager=conda \
+            -P data_path=${{ env.DATA_PATH }} \
+            -P target_var=${{ env.TAGET_VAR }}
       - name: 🗂️ List contents of mlruns
         shell: bash -l {0}
         run: |
