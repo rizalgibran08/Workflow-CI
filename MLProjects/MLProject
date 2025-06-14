@@ -6,7 +6,6 @@ entry_points:
   main:
     parameters:
       data_path: { type: str }
-      target_var: {type: str, default: "Churn"}
       n_estimators: { type: int, default: 257 }
       max_depth: { type: int, default: 25 }
-    command: 'python modelling.py --data_path {data_path} --target_var {target_var} --n_estimators {n_estimators} --max_depth {max_depth}'
+    command: 'python modelling.py --data_path {data_path} --n_estimators {n_estimators} --max_depth {max_depth}'
