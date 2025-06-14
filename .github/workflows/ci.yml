@@ -11,7 +11,6 @@ on:
 
 env:
   DATA_PATH: "MLProjects/Telco_preprocessed.csv"
-  TAGET_VAR: "Churn"
 
 jobs:
   train-and-deploy:
@@ -42,9 +41,8 @@ jobs:
       - name: 🏃 Run MLflow Project
         shell: bash -l {0}
         run: |
-          mlflow run ./MLProjects --env-manager=conda \
-            -P data_path=${{ env.DATA_PATH }} \
-            -P target_var=${{ env.TAGET_VAR }}
+          mlflow run ./MLProjects --env-manager=conda -P data_path=${{ env.DATA_PATH }}
+
       - name: 🗂️ List contents of mlruns
         shell: bash -l {0}
         run: |
