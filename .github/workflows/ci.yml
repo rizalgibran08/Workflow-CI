@@ -10,7 +10,8 @@ on:
   workflow_dispatch:
 
 env:
-  DATA_PATH: './Telco_preprocessed.csv'
+  DATA_PATH: "MLProjects/Telco_preprocessed.csv"
+  TAGET_VAR: "Churn"
 
 jobs:
   train-and-deploy:
@@ -20,7 +21,12 @@ jobs:
       - name: 🛒 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: 🐍 Set up Miniconda
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: 🐍 Set up conda
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-activate-base: false
@@ -31,12 +37,12 @@ jobs:
       - name: 📦 Install pip dependencies
         shell: bash -l {0}
         run: |
-          pip install mlflow==2.19.0
+          pip install mlflow
 
       - name: 🏃 Run MLflow Project
         shell: bash -l {0}
         run: |
-          mlflow run ./MLProjects --env-manager=conda -P data_path=${{ env.DATA_PATH }}
+          mlflow run ./MLProjects --env-manager=conda
 
       - name: 🗂️ List contents of mlruns
         shell: bash -l {0}
@@ -49,7 +55,12 @@ jobs:
         shell: bash -l {0}
         run: |
           RUN_ID=$(find mlruns/0 -type d -path "*/artifacts/model" | sort | tail -n1 | cut -d'/' -f3)
-          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          if [ -z "$RUN_ID" ]; then
+            echo "No MLflow model artifact found."
+            exit 1
+          fi
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+          echo "Latest run_id from model artifact: $RUN_ID"
 
       - name: 🔐 Log in to Docker Hub
         uses: docker/login-action@v2
@@ -60,9 +71,10 @@ jobs:
       - name: 🛠️ Build Docker Image from MLflow Model
         shell: bash -l {0}
         run: |
-          mlflow models build-docker \
-            --model-uri "mlruns/0/${{ steps.get_run_id.outputs.run_id }}/artifacts/model" \
-            --name telco-churn-model
+          echo "Checking model URI..."
+          echo "Using run ID: $RUN_ID"
+          ls -l "mlruns/0/$RUN_ID/artifacts/model"
+          mlflow models build-docker --model-uri "mlruns/0/$RUN_ID/artifacts/model" --name air-quality-model
 
       - name: 🏷️ Tag Docker Image
         run: |
@@ -80,13 +92,10 @@ jobs:
 
       - name: 💾 Commit and Push MLflow artifacts to GitHub
         shell: bash -l {0}
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}
-          git pull origin main
-          git add MLProjects/mlruns/
-          git commit -m "🔄 Add MLflow artifacts for run ${{ steps.get_run_id.outputs.run_id }}" || echo "No changes to commit"
+          git remote set-url origin https://github.com/${{ github.repository }}
+          git add MLProject/mlruns/
+          git commit -m "Add MLflow artifacts for run $RUN_ID" || echo "No changes to commit"
           git push origin main
